@@ -14,10 +14,31 @@ loginForm.addEventListener("submit", (e) => {
     alert("Ensure you input a value in both fields!");
   } else {
     // perform operation with form input
-    alert("This form has been successfully submitted!");
+    //alert("This form has been successfully submitted!");
     console.log(
       `This form has a username of ${username.value} and password of ${password.value}`
     );
+    
+    let data = {
+      "username": username.value,
+      "password": password.value
+    };
+
+    // Handle announcement
+    fetch("/login",
+      {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)})
+    .then((response) => response.text())
+    .then((text) => {
+      if (text=="success") {
+          alert("Successfully logged in!")
+          location.href = "/profile";
+      }
+      else {
+          alert("Error logging in!")
+    }});
+
 
     username.value = "";
     password.value = "";
