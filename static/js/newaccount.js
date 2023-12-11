@@ -1,7 +1,3 @@
-function say_hi(){
-    console.log("hey")
-}
-// https://www.freecodecamp.org/news/how-to-submit-a-form-with-javascript/#:~:text=To%20get%20this%20form's%20data,JavaScript%20using%20their%20document%20methods.
 let loginForm = document.getElementById("loginForm");
 
 loginForm.addEventListener("submit", (e) => {
@@ -13,37 +9,29 @@ loginForm.addEventListener("submit", (e) => {
   if (username.value == "" || password.value == "") {
     alert("Please provide a value for both fields!");
   } else {
-    // perform operation with form input
-    //alert("This form has been successfully submitted!");
-    console.log(
-      `This form has a username of ${username.value} and password of ${password.value}`
-    );
 
     let data = {
       "username": username.value,
       "password": password.value
     };
 
-    // Check user credentials
-    fetch("/auth",
+    // Handle announcement
+    fetch("/addcredentials",
       {method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(data)})
     .then((response) => response.text())
     .then((text) => {
-    	if (text=="success") {
-        	alert("Successfully logged in!")
-        	location.href = "/home";
-    	}
-      	else if (text=="no account"){
-        	alert("Account not found")
-    	} else if (text=="incorrect credentials") {
-			alert("Incorrect username or password.")
-		} else if (text=="error") {
-			alert("Error logging in")
-		}
-
-	});
+      if (text=="success") {
+          alert("Successfully logged in!")
+          location.href = "/home";
+      }
+	  else if (text=="already exists") {
+			alert("Sorry, that username already exists. Try another one.")
+	  }
+      else {
+          alert("Error creating new account!")
+    }});
 
 
     username.value = "";

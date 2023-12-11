@@ -157,6 +157,7 @@ def addCredentials(username, password):
     conn.commit()
     conn.close()
 
+    return
 
 # Add users to each other's friendship table
 def addFriendship(username, friend):
@@ -231,6 +232,7 @@ def printtables():
     conn.close()
 
     print("Tables:", tables)
+
     return
 
 

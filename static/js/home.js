@@ -42,7 +42,6 @@ function createChat(friend){
 	.then((response) => response.text())
 	.then((text) => {
 		if(text == "success") {
-			alert("hehehe")
 		}
 	});
 
