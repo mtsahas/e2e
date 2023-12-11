@@ -20,7 +20,6 @@
 function enterUser(){
   let friend = document.getElementById("friend").value;
   document.getElementById("friend").input = friend
-  alert(friend)
 
   let data = {
 	"friend": friend,

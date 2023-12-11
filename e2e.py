@@ -9,34 +9,27 @@ import os
 import flask
 import sqlite3
 from flask import session
-#import urllib
-#import database
-#import auth
-# -------------------------------------------------------------------
 
+
+# ------------------------ App setup --------------------------------
 app = flask.Flask(__name__, template_folder='static/templates')
 app.secret_key = os.environ['APP_SECRET_KEY']
 
-
+# Initialize login_info table
+conn = sqlite3.connect("database.db")
+cursor = conn.cursor()
+result = cursor.execute("CREATE TABLE IF NOT EXISTS login_info(username TEXT, password TEXT)")
+conn.close()
 # -------------------------------------------------------------------
-
-
-
-login_info = {}
-login_info["alice"]="alice"
-login_info["bob"]="bob"
-
-chats = {}
 
 
 @app.route('/', methods=['GET'])
 @app.route('/login', methods=['GET'])
 def login():
-    # username = 'lyoder'#auth.authenticate()
-    # tags = database.get_tags()
     html_code = flask.render_template('login.html')
     response = flask.make_response(html_code)
     return response
+
 
 @app.route('/auth', methods=['POST'])
 def auth():
@@ -45,25 +38,24 @@ def auth():
     username = username.lower()
     password = data['password']
 
-    success = False
+    # Get user's password as stored in db
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    result = cursor.execute("SELECT password FROM login_info WHERE username=?", [username])
+    db_password = result.fetchone()
+    conn.close()
 
-    # First check if username is a key in login_info
-    #print(login_info)
-
-
-    if username not in login_info:
-        print("hello")
+	# Check if there is a row with specified username in db
+    if db_password == None:
         return "no account"
 
-    if username in login_info:
-        # If username exists, check if password matches
-        if (login_info[username] == password):
-            session["username"] = username
-            return "success"
+	# If a row exists, check if passwords match
+    if password == db_password[0]:
+        session["username"] = username
+        return "success"
 
-        return "incorrect credentials"
+    return "incorrect credentials"
 
-    return "error"
 
 @app.route('/home', methods=['GET'])
 def home():
@@ -78,17 +70,28 @@ def newaccount():
     response = flask.make_response(html_code)
     return response
 
+
 @app.route("/startchat", methods=['POST'])
 def startchat():
     username = session["username"]
     data = flask.request.json
     friend = data['friend']
+    friend = friend.lower()
 
     if friend == username:
         return "self chat"
 
-    if friend not in login_info:
+    # Check if an account already exists with username
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    result = cursor.execute("SELECT * FROM login_info WHERE username=?", [friend])
+    db_password = result.fetchone()
+    conn.close()
+
+    if db_password == None:
         return "no account"
+
+    return "success"
 
 
 @app.route('/addcredentials', methods=['POST'])
@@ -98,26 +101,26 @@ def addcredentials():
     username = username.lower()
     password = data['password']
 
-    if username in login_info:
-        print("hello!!!!!")
-        print(login_info)
+    # Check if an account already exists with username
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    result = cursor.execute("SELECT * FROM login_info WHERE username=?", [username])
+    db_password = result.fetchone()
+    conn.close()
+
+    if db_password != None:
         return("already exists")
 
     # add credentials to DB
-    login_info[username]=password
+    ##### todo: add exception handling in try-catch statement
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    result = cursor.execute("INSERT INTO login_info (username, password) VALUES(?, ?)", [username, password])
+    conn.commit()
+    conn.close()
+
     session["username"] = username
-    '''
-    try:
-        login_info[username]=password
-        session["username"] = username
 
-    except:
-        print("ran into an error")
-        print(login_info)
-        return "error"
-        '''
-
-    print(login_info)
     return "success"
 
 if __name__ == '__main__':

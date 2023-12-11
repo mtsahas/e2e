@@ -35,7 +35,7 @@ loginForm.addEventListener("submit", (e) => {
 			alert("Sorry, that username already exists. Try another one.")
 	  }
       else {
-          alert("Error logging in hhhh!")
+          alert("Error creating new account!")
     }});
 
 
