@@ -35,7 +35,14 @@ def login():
 # Display home page
 @app.route('/home', methods=['GET'])
 def home():
-    html_code = flask.render_template('home.html', username=session["username"])
+    username = session["username"]
+    friends = getFriends(username)
+
+    if len(friends)== 0:
+        print("no friends yet!")
+
+    print(friends)
+    html_code = flask.render_template('home.html', username=session["username"], friends=friends)
     response = flask.make_response(html_code)
     return response
 
@@ -158,6 +165,30 @@ def addCredentials(username, password):
     conn.close()
 
     return
+
+
+# Return a user's friends
+def getFriends(username):
+
+
+    # If a user doesn't have a friendship table yet, return None
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    result = cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{username}'")
+    tableExists = result.fetchone()
+    conn.close()
+
+    if (tableExists == None):
+        return []
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    result = cursor.execute(f"SELECT * FROM {username}")
+    friends = result.fetchall()
+    conn.close()
+
+    return friends
+
 
 # Add users to each other's friendship table
 def addFriendship(username, friend):

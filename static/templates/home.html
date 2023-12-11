@@ -28,6 +28,17 @@
 
 			  <h2> My chats </h2>
 
+			  {% if friends|length == 0: %}
+			  <strong>No friends sowwy </strong>
+
+			  {% else %}
+
+			  	{% for each in friends: %}
+			  		Friend: {{each[0]}}
+			  	{% endfor %}
+
+			  {% endif %}
+
 		   </td>
 
 		   <!--Split Screen-->
