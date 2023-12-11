@@ -11,7 +11,7 @@ loginForm.addEventListener("submit", (e) => {
   let password = document.getElementById("password");
 
   if (username.value == "" || password.value == "") {
-    alert("Ensure you input a value in both fields!");
+    alert("Please provide a value for both fields!");
   } else {
     // perform operation with form input
     //alert("This form has been successfully submitted!");
