@@ -1,40 +1,22 @@
-// let newChat = document.getElementById("newchat");
-
-// newChat.addEventListener("submit", (e) => {
-
-//   e.preventDefault();
-//   console.log("HELLO")
-//   document.getElementById("who_form").hidden = false;
-
-// });
-
-
-// window.onload = function() {
-//   document.getElementById("who_form").hidden = true;
-// };
-
-// function startChat(){
-// 	document.getElementById("who_form").hidden = false;
-// }
-
 function enterUser(){
-  let friend = document.getElementById("friend").value;
-  document.getElementById("friend").input = friend
+	let friend = document.getElementById("friend").value;
+	document.getElementById("friend").input = friend
 
-  let data = {
-	"friend": friend,
-  };
+	let data = {
+		"friend": friend,
+	};
 
-  // Start a chat
-  fetch("/startchat",
-	{method: 'POST',
-	headers: {'Content-Type': 'application/json'},
-	body: JSON.stringify(data)})
-  .then((response) => response.text())
-  .then((text) => {
+	// Verify desired user to chat with
+	fetch("/checkfriend",
+		{method: 'POST',
+		headers: {'Content-Type': 'application/json'},
+		body: JSON.stringify(data)})
+	.then((response) => response.text())
+	.then((text) => {
+
+		// todo: add case for already have a chat with this person!
 	  if (text=="success") {
-		  alert("Creating new chat!")
-		  location.href = "/home";
+		  createChat(friend)
 	  }
 		else if (text=="no account"){
 		  alert("No account found with this username :( ")
@@ -44,6 +26,25 @@ function enterUser(){
 	  	else if (text=="error") {
 		  alert("Error logging in")
 	  }});
+
+}
+
+function createChat(friend){
+	let data = {
+		"friend": friend,
+	};
+
+	// Verify desired user to chat with
+	fetch("/createchat",
+		{method: 'POST',
+		headers: {'Content-Type': 'application/json'},
+		body: JSON.stringify(data)})
+	.then((response) => response.text())
+	.then((text) => {
+		if(text == "success") {
+			alert("hehehe")
+		}
+	});
 
 }
 // https://gitlab.matrix.org/matrix-org/olm/-/blob/master/javascript/demo/group_demo.js?ref_type=heads
