@@ -23,11 +23,27 @@ conn.close()
 # -------------------------------------------------------------------
 
 
-# Dispaly login page
+# Display login page
 @app.route('/', methods=['GET'])
 @app.route('/login', methods=['GET'])
 def login():
     html_code = flask.render_template('login.html')
+    response = flask.make_response(html_code)
+    return response
+
+
+# Display home page
+@app.route('/home', methods=['GET'])
+def home():
+    html_code = flask.render_template('home.html', username=session["username"])
+    response = flask.make_response(html_code)
+    return response
+
+
+# Display new account page
+@app.route('/newaccount', methods=['GET'])
+def newaccount():
+    html_code = flask.render_template('newaccount.html')
     response = flask.make_response(html_code)
     return response
 
@@ -53,22 +69,6 @@ def auth():
         return "success"
 
     return "incorrect credentials"
-
-
-# Display home page
-@app.route('/home', methods=['GET'])
-def home():
-    html_code = flask.render_template('home.html', username=session["username"])
-    response = flask.make_response(html_code)
-    return response
-
-
-# Display new account page
-@app.route('/newaccount', methods=['GET'])
-def newaccount():
-    html_code = flask.render_template('newaccount.html')
-    response = flask.make_response(html_code)
-    return response
 
 
 # Add a user's credentials to the db if the username isn't taken
