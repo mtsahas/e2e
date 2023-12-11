@@ -4,11 +4,11 @@
     justify-content: center;
     align-items: center;
   }
-  
+
   .action {
     margin: 10px;
   }
-  
+
   button {
     cursor: pointer;
   }

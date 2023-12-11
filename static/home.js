@@ -1,10 +1,6 @@
-function say_hi(){
-    console.log("hey")
-}
-// https://www.freecodecamp.org/news/how-to-submit-a-form-with-javascript/#:~:text=To%20get%20this%20form's%20data,JavaScript%20using%20their%20document%20methods.
-let loginForm = document.getElementById("loginForm");
+let newChat = document.getElementById("newchat");
 
-loginForm.addEventListener("submit", (e) => {
+newChat.addEventListener("submit", (e) => {
   e.preventDefault();
 
   let username = document.getElementById("username");
@@ -18,26 +14,32 @@ loginForm.addEventListener("submit", (e) => {
     console.log(
       `This form has a username of ${username.value} and password of ${password.value}`
     );
-    
+
     let data = {
       "username": username.value,
       "password": password.value
     };
 
-    // Handle announcement
-    fetch("/login",
+    // Check user credentials
+    fetch("/auth",
       {method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(data)})
     .then((response) => response.text())
     .then((text) => {
-      if (text=="success") {
-          alert("Successfully logged in!")
-          location.href = "/profile";
-      }
-      else {
-          alert("Error logging in!")
-    }});
+    	if (text=="success") {
+        	alert("Successfully logged in!")
+        	location.href = "/home";
+    	}
+      	else if (text=="no account"){
+        	alert("Account not found")
+    	} else if (text=="incorrect credentials") {
+			alert("Incorrect username or password.")
+		} else if (text=="error") {
+			alert("Error logging in")
+		}
+
+	});
 
 
     username.value = "";
