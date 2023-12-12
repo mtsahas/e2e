@@ -9,10 +9,14 @@ import os
 import flask
 import sqlite3
 from flask import session
+from flask_sock import Sock
+import asyncio
+import websockets
 
 
 # ------------------------ App setup --------------------------------
 app = flask.Flask(__name__, template_folder='static/templates')
+sock = Sock(app)
 app.secret_key = os.environ['APP_SECRET_KEY']
 
 # Initialize login_info table
@@ -23,6 +27,53 @@ conn.close()
 # -------------------------------------------------------------------
 
 users = ["priya"]
+all_clients = []
+sock_map = {}
+
+'''
+async def send_message(message):
+    for client in all_clients:
+        await client.send(message)
+
+async def new_client_connected(client_socket, path):
+    print("new client connected!")
+
+    # add new socket to list of client sockts
+    all_clients.append(client_socket)
+    print(all_clients)
+
+    while True:
+       new_message = await client_socket.recv()
+       print("Client sent:", new_message)
+       await send_message(new_message)
+
+async def start_server():
+    print('server started!')
+    await websockets.serve(new_client_connected, "localhost", 5003)
+'''
+
+
+
+# echo
+@sock.route('/echo')
+def echo(sock):
+
+    print("Echo sock:", sock)
+    while True:
+        data = sock.receive()
+        print(data)
+        print("Echo sock:", sock)
+        sock.send(data)
+
+@sock.route('/shawty')
+def shawty(sock):
+    print("shawty sock", sock)
+    while True:
+        data = sock.receive()
+        print(data)
+        print("Shawty sock:", sock)
+        sock.send("hey shawty")
+
 
 # Display login page
 @app.route('/', methods=['GET'])
@@ -37,7 +88,6 @@ def login():
 @app.route('/home', methods=['GET'])
 def home():
     username = session["username"]
-
     html_code = flask.render_template('home.html', username=username)
     response = flask.make_response(html_code)
     return response
@@ -127,4 +177,4 @@ def createchat():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    app.run(debug=True, host='0.0.0.0', port=5002)
