@@ -22,6 +22,7 @@ result = cursor.execute("CREATE TABLE IF NOT EXISTS login_info(username TEXT, pa
 conn.close()
 # -------------------------------------------------------------------
 
+users = ["priya"]
 
 # Display login page
 @app.route('/', methods=['GET'])
@@ -36,13 +37,8 @@ def login():
 @app.route('/home', methods=['GET'])
 def home():
     username = session["username"]
-    friends = getFriends(username)
 
-    if len(friends)== 0:
-        print("no friends yet!")
-
-    print(friends)
-    html_code = flask.render_template('home.html', username=session["username"], friends=friends)
+    html_code = flask.render_template('home.html', username=username)
     response = flask.make_response(html_code)
     return response
 
@@ -61,21 +57,13 @@ def auth():
     data = flask.request.json
     username = data['username']
     username = username.lower()
-    password = data['password']
 
-    # Get user's password as stored in db
-    db_password = fetchPassword(username)
-
-	# Check if there is a row with specified username in db
-    if db_password == None:
-        return "no account"
-
-	# If a row exists, check if passwords match
-    if password == db_password[0]:
+    # Check if user account exists
+    if (username in users):
         session["username"] = username
         return "success"
 
-    return "incorrect credentials"
+    return "no account"
 
 
 # Add a user's credentials to the db if the username isn't taken
@@ -84,16 +72,13 @@ def addcredentials():
     data = flask.request.json
     username = data['username']
     username = username.lower()
-    password = data['password']
 
     # Check if an account already exists with username
-    db_password = fetchPassword(username)
-
-    if db_password != None:
+    if (username in users):
         return("already exists")
 
-    # add credentials to DB
-    addCredentials(username, password)
+    # add credentials to users list
+    users.append(username)
 
     session["username"] = username
 
@@ -136,135 +121,9 @@ def createchat():
     # Create messsages table for storing chats
     createMessagesTable(username, friend)
 
-	# Sanity check
-    printtables()
-
     return "success"
 
 
-
-# ------------------- Backend Information Delivery -------------------
-
-# Fetch the password for a given username
-def fetchPassword(username):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute("SELECT password FROM login_info WHERE username=?", [username])
-    password = result.fetchone()
-    conn.close()
-
-    return password
-
-
-# Add credentials to db
-def addCredentials(username, password):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute("INSERT INTO login_info (username, password) VALUES(?, ?)", [username, password])
-    conn.commit()
-    conn.close()
-
-    return
-
-
-# Return a user's friends
-def getFriends(username):
-
-
-    # If a user doesn't have a friendship table yet, return None
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{username}'")
-    tableExists = result.fetchone()
-    conn.close()
-
-    if (tableExists == None):
-        return []
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute(f"SELECT * FROM {username}")
-    friends = result.fetchall()
-    conn.close()
-
-    return friends
-
-
-# Add users to each other's friendship table
-def addFriendship(username, friend):
-
-    # Create friends table for each user if needed
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute(f"CREATE TABLE IF NOT EXISTS {username}(friend TEXT)")
-    conn.close()
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute(f"CREATE TABLE IF NOT EXISTS {friend}(friend TEXT)")
-    conn.close()
-
-    # Add each user to the other's friendship table
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute(f"SELECT * FROM {username} WHERE friend=?", [friend])
-    hasFriend = result.fetchone()
-    conn.close()
-
-    if (hasFriend == None):
-        print("First time y'all are becoming friends!")
-        conn = sqlite3.connect("database.db")
-        cursor = conn.cursor()
-        result = cursor.execute(f"INSERT INTO {username} (friend) VALUES(?)", [friend])
-        conn.commit()
-        conn.close()
-    else:
-        print("Y'all are already friends!")
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute(f"SELECT * FROM {friend} WHERE friend=?", [username])
-    hasFriend = result.fetchone()
-    conn.close()
-
-    if (hasFriend == None):
-        print("First time y'all are becoming friends!")
-        conn = sqlite3.connect("database.db")
-        cursor = conn.cursor()
-        result = cursor.execute(f"INSERT INTO {friend} (friend) VALUES(?)", [username])
-        conn.commit()
-        conn.close()
-    else:
-        print("Y'all are already friends!")
-
-    return
-
-
-# Create messages table for storing chats
-def createMessagesTable(username, friend):
-    names = [username, friend]
-    names.sort()
-    sortedNames = ''.join(names)
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    result = cursor.execute(f"CREATE TABLE IF NOT EXISTS {sortedNames}(timestamp INTEGER, author TEXT, message TEXT)")
-    conn.close()
-
-    return
-
-
-# Display all the tables in the database
-def printtables():
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    tables = cursor.fetchall()
-    conn.close()
-
-    print("Tables:", tables)
-
-    return
 
 
 if __name__ == '__main__':

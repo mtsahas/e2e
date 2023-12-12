@@ -4,15 +4,13 @@ loginForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
   let username = document.getElementById("username");
-  let password = document.getElementById("password");
 
-  if (username.value == "" || password.value == "") {
-    alert("Please provide a value for both fields!");
+  if (username.value == "") {
+    alert("Please provide a value for the field!");
   } else {
 
     let data = {
       "username": username.value,
-      "password": password.value
     };
 
     // Handle announcement
@@ -35,7 +33,6 @@ loginForm.addEventListener("submit", (e) => {
 
 
     username.value = "";
-    password.value = "";
   }
 });
 // https://gitlab.matrix.org/matrix-org/olm/-/blob/master/javascript/demo/group_demo.js?ref_type=heads

@@ -5,15 +5,13 @@ loginForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
   let username = document.getElementById("username");
-  let password = document.getElementById("password");
 
-  if (username.value == "" || password.value == "") {
-    alert("Please provide a value for both fields!");
+  if (username.value == "" ) {
+    alert("Please provide a value for the field!");
   } else {
 
     let data = {
       "username": username.value,
-      "password": password.value
     };
 
     // Check user credentials
@@ -27,19 +25,14 @@ loginForm.addEventListener("submit", (e) => {
         	alert("Successfully logged in!")
         	location.href = "/home";
     	}
-      	else if (text=="no account"){
-        	alert("Account not found")
-    	} else if (text=="incorrect credentials") {
-			alert("Incorrect username or password.")
-		} else if (text=="error") {
-			alert("Error logging in")
-		}
+      else if (text=="no account"){
+        alert("Account not found")
+		  }
 
 	});
 
 
     username.value = "";
-    password.value = "";
   }
 });
 // https://gitlab.matrix.org/matrix-org/olm/-/blob/master/javascript/demo/group_demo.js?ref_type=heads
