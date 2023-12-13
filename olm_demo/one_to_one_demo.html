@@ -25,18 +25,25 @@ function demo() {
         return {start:start, done:done};
     }
 
+
+    // one time account setup
     window.alice = new Olm.Account();
     window.bob = new Olm.Account();
-    var a_session = new Olm.Session();
-    var b_session = new Olm.Session();
-    var message_1;
     var tasks = [];
-
     tasks.push(["alice", "Creating account", function() { alice.create() }]);
     tasks.push(["bob", "Creating account", function() { bob.create() }]);
     tasks.push(["bob", "Generate one time keys", function() {
         bob.generate_one_time_keys(1);
     }]);
+
+
+
+    // start a convo vetween alice and bob
+    var a_session = new Olm.Session();
+    var b_session = new Olm.Session();
+    var message_1;
+
+   
     tasks.push(["alice", "Create outbound session", function() {
         var bobs_id_keys = JSON.parse(bob.identity_keys());
         var bobs_id_key = bobs_id_keys.curve25519;

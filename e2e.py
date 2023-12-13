@@ -68,6 +68,7 @@ def echo(sock):
         json_data = json.loads(data)
 
         # normal messaging after olm handshake
+
         if json_data["type"] == "message":
             receiver = json_data["to"]
             receiver = receiver.lower()
@@ -76,6 +77,16 @@ def echo(sock):
             message_string = sender + ": " + json_data["msg"]
             receiver_sock.send(message_string)
         
+        ## what sock receives:
+        # 1. regular message (message)
+        # 2. request to talk to someone (key_query)
+        # 3. first time message (invite)
+
+        ## what we send through socks:
+        # 1. public keys + ot key (key_send)
+        # 2. invite (first message --> to create inbound on js) (first_message)
+        # 3. regular messaging (message)
+
         print(sock_map)
         print("Echo sock:", sock)
        

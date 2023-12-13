@@ -2,6 +2,8 @@
 var chatter = ""
 var author = document.getElementById('username').innerHTML
 
+
+
 const log = (text, color) => {
 	document.getElementById('log').innerHTML += `<span style="color: ${color}">${text}</span><br>`;
   };
