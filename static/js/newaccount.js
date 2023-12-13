@@ -46,13 +46,18 @@ loginForm.addEventListener("submit", (e) => {
 function createOlmAcc(){
     window.user= new Olm.Account();
     user.create()
-    user.generate_one_time_keys(50)
+    user.generate_one_time_keys(5)
     id_keys = JSON.parse(user.identity_keys())
     id_key_private = id_keys.ed25519
     id_key_public = id_keys.curve25519
-    one_time_keys = user.one_time_keys()
+    one_time_keys = JSON.parse(user.one_time_keys())
+    var user_ot_keys = []
+    for (key in one_time_keys.curve25519) {
+        user_ot_keys.push(one_time_keys.curve25519[key]);
+    }
+ 
 
-    let data = {"id_key":id_key_public, "one_time_keys":one_time_keys}
+    let data = {"id_key":id_key_public, "one_time_keys":user_ot_keys}
     // Handle announcement
     fetch("/receivekeys",
       {method: 'POST',
@@ -62,11 +67,11 @@ function createOlmAcc(){
     .then((text) => {
       if (text=="success") {
           alert("Successfully sent keys!")
-          localStorage.setItem("id_key", user.identity_keys());
+          localStorage.setItem("id_keys", user.identity_keys());
       
           // call function to create olm accounts, set local storage, send public keys (ot key + id key)
-          let user_string = user.pickle(user.identity_keys()) // does this work..?
-          alert(user_string)
+          //let user_string = user.pickle(user.identity_keys()) // does this work..?
+          let user_string = user.pickle(user.identity_keys())
           localStorage.setItem("olm_acc", user_string);
 
           location.href = "/home";

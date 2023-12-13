@@ -28,6 +28,7 @@ conn.close()
 
 users = []
 all_clients = []
+buddies = []
 sock_map = {}
 idkey_map = {}
 otkey_map = {}
@@ -76,9 +77,8 @@ def echo(sock):
             receiver = receiver.lower()
             sender = json_data["from"]
             receiver_sock = sock_map[receiver]
-            message_string = sender + ": " + json_data["msg"]
 
-            formatted_send = {"type":"message", "to": receiver, "from":sender, "message":message_string}
+            formatted_send = {"type":"message", "to": receiver, "from":sender, "message":json_data["msg"]}
             receiver_sock.send(json.dumps(formatted_send))
         elif json_data["type"] == "key_query":
             # whose key info do we need?
@@ -89,7 +89,14 @@ def echo(sock):
             formatted_send = {"type":"key_send", "id_key":id_key, "ot_key":ot_key}
             sock.send(json.dumps(formatted_send)) ## sending back to same socket
 
+        elif json_data["type"] == "invite":
+            receiver = json_data["to"].lower()
+            sender = json_data["from"]
+            receiver_sock = sock_map[receiver]
+            message = json_data["message"]
 
+            formatted_send = {"type":"invite", "message":message}
+            receiver_sock.send(json.dumps(formatted_send))
         
         ## what sock receives:
         # 1. regular message (message)
@@ -170,7 +177,7 @@ def receivekeys():
     data = flask.request.json
     username = session["username"]
     id_key = data['id_key']
-    one_time_keys = data["one_time_keys"].split(",")
+    one_time_keys = data["one_time_keys"]
     try:
         idkey_map[username] = id_key
         otkey_map[username] = one_time_keys ## list of keys

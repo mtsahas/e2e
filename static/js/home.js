@@ -1,6 +1,8 @@
 // who are we talking to currently
 var chatter = ""
 var author = document.getElementById('username').innerHTML
+var u_session // can i do this
+var user
 
 document.addEventListener("DOMContentLoaded", function() {
 	Olm.init()
@@ -20,18 +22,54 @@ const socket = new WebSocket('ws://' + location.host + '/echo');
 	let data = ev.data
 	let json_data = JSON.parse(data)
 	if (json_data["type"]=="message"){
-		log(json_data["message"], 'purple');
+		sender = json_data["from"]
+		message = json_data["message"]
+		decrypted = u_session.decrypt(message.type, message.body)
+		formatted_string = sender+": "+decrypted
+		log(formatted_string, 'purple');
 	}
-	if (json_data["type"]=="key_send"){
+	else if (json_data["type"]=="key_send"){
 		//log(json_data["message"], 'purple');
-		let user = new Olm.Account()
-		let id_key = localStorage.getItem("id_key");
-		alert(id_key)
+		user = new Olm.Account()
+		let id_keys = localStorage.getItem("id_keys");
+		// alert(id_key)
 		let user_str = localStorage.getItem("olm_acc")
-		alert(user_str)
-		user.unpickle(user_str, user.identity_keys) //????
-		alert(user)
-		alert(JSON.parse(user.identity_keys()))
+		user.unpickle(id_keys, user_str) //????
+		id_keys = user.identity_keys()
+
+		// ok now i know who i am!!!! and i have keys !!!!
+		// create outbound session
+		u_session = new Olm.Session();
+		receiver_id_key = json_data["id_key"]
+		receiver_ot_key = json_data["ot_key"] // this one is fucked up
+		alert(receiver_id_key)
+		alert(receiver_ot_key)
+		u_session.create_outbound(user, receiver_id_key, receiver_ot_key);
+		message1 = u_session.encrypt("SHAWTY");
+		log("Created outbound session", 'green');
+		let data = {
+			"type": "invite",
+			"to": chatter,
+			"from": author,
+			"message": message1
+		}
+		socket.send(JSON.stringify(data));
+	}
+	else if (json_data["type"]=="invite"){
+		user = new Olm.Account()
+		let id_keys = localStorage.getItem("id_keys");
+		let user_str = localStorage.getItem("olm_acc")
+		user.unpickle(id_keys, user_str)
+		id_keys = user.identity_keys()
+		message1 = json_data["message"]
+
+		// ok now i know who i am!!!! and i have keys !!!!
+		// create outbound session
+		u_session = new Olm.Session();
+		alert("about to do inbound")
+		u_session.create_inbound(user, message1.body);
+		plaintext = u_session.decrypt(message1.type, message1.body);
+		log(plaintext, 'purple');
 	}
 
 	
@@ -53,7 +91,7 @@ document.getElementById('form').onsubmit = ev => {
 			"type": "message",
 			"to": chatter,
 			"from": author,
-			"msg": textField.value
+			"msg": u_session.encrypt(textField.value)
 		}
 		socket.send(JSON.stringify(data));
 		textField.value = '';
