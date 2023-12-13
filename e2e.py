@@ -26,9 +26,11 @@ result = cursor.execute("CREATE TABLE IF NOT EXISTS login_info(username TEXT, pa
 conn.close()
 # -------------------------------------------------------------------
 
-users = {"priya":"", "mary":""}
+users = []
 all_clients = []
 sock_map = {}
+idkey_map = {}
+otkey_map = {}
 
 '''
 async def send_message(message):
@@ -75,7 +77,19 @@ def echo(sock):
             sender = json_data["from"]
             receiver_sock = sock_map[receiver]
             message_string = sender + ": " + json_data["msg"]
-            receiver_sock.send(message_string)
+
+            formatted_send = {"type":"message", "to": receiver, "from":sender, "message":message_string}
+            receiver_sock.send(json.dumps(formatted_send))
+        elif json_data["type"] == "key_query":
+            # whose key info do we need?
+            receiver = json_data["to"].lower()
+            # taking and removing last element of one time keys
+            ot_key = otkey_map[receiver].pop()
+            id_key = idkey_map[receiver]
+            formatted_send = {"type":"key_send", "id_key":id_key, "ot_key":ot_key}
+            sock.send(json.dumps(formatted_send)) ## sending back to same socket
+
+
         
         ## what sock receives:
         # 1. regular message (message)
@@ -145,9 +159,26 @@ def addcredentials():
         return("already exists")
 
     # add credentials to users list
-    users[username] = ""
+    users.append(username)
 
     session["username"] = username
+
+    return "success"
+
+@app.route('/receivekeys', methods=['POST'])
+def receivekeys():
+    data = flask.request.json
+    username = session["username"]
+    id_key = data['id_key']
+    one_time_keys = data["one_time_keys"].split(",")
+    try:
+        idkey_map[username] = id_key
+        otkey_map[username] = one_time_keys ## list of keys
+        print("ID key map:", idkey_map)
+        print("OT key map:", otkey_map)
+    except:
+        return "error"
+
 
     return "success"
 
