@@ -17,11 +17,12 @@
 		<tr>
 		   <td max-width=30% width=30% style="vertical-align:top;padding:2rem;">
 
-				<h1> Welcome, {{username}}! </h1>
+				<h1 >Welcome,</h1> 
+				<h1 id="username">{{username}}</h1>
 				<div id ="who_form">
 					Who do you want to chat with? <br>
-					<input type="text" id="friend"> </input>
-					<button type="submit" onclick="enterUser()">Go</button>
+						<input type="text" id="friend"> </input>
+						<button type="submit" onclick="enterUser()">Go</button>
 				</div>
 
 				<br>
@@ -41,12 +42,9 @@
 
 		   </td>
 
-		   <!--Split Screen-->
 		   <td max-width = "70%" width="70%" style="vertical-align: top; padding-top:2rem">
-			   Chat window
 
-
-			   <h1>Flask-Sock Demo</h1>
+			   <h1 id = "chat_header"></h1>
 				<div id="log"></div>
 				<br>
 				<form id="form">

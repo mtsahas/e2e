@@ -12,7 +12,7 @@ from flask import session
 from flask_sock import Sock
 import asyncio
 import websockets
-
+import json
 
 # ------------------------ App setup --------------------------------
 app = flask.Flask(__name__, template_folder='static/templates')
@@ -26,7 +26,7 @@ result = cursor.execute("CREATE TABLE IF NOT EXISTS login_info(username TEXT, pa
 conn.close()
 # -------------------------------------------------------------------
 
-users = ["priya"]
+users = {"priya":"", "mary":""}
 all_clients = []
 sock_map = {}
 
@@ -57,22 +57,28 @@ async def start_server():
 # echo
 @sock.route('/echo')
 def echo(sock):
-
+    sock_map[session["username"]] = sock
+    
+    print("Just gave", session["username"], "socket", sock)
     print("Echo sock:", sock)
     while True:
         data = sock.receive()
         print(data)
-        print("Echo sock:", sock)
-        sock.send(data)
+        # convert string into python dict
+        json_data = json.loads(data)
 
-@sock.route('/shawty')
-def shawty(sock):
-    print("shawty sock", sock)
-    while True:
-        data = sock.receive()
-        print(data)
-        print("Shawty sock:", sock)
-        sock.send("hey shawty")
+        # normal messaging after olm handshake
+        if json_data["type"] == "message":
+            receiver = json_data["to"]
+            receiver = receiver.lower()
+            sender = json_data["from"]
+            receiver_sock = sock_map[receiver]
+            message_string = sender + ": " + json_data["msg"]
+            receiver_sock.send(message_string)
+        
+        print(sock_map)
+        print("Echo sock:", sock)
+       
 
 
 # Display login page
@@ -128,7 +134,7 @@ def addcredentials():
         return("already exists")
 
     # add credentials to users list
-    users.append(username)
+    users[username] = ""
 
     session["username"] = username
 
@@ -147,32 +153,10 @@ def checkfriend():
         return "self chat"
 
     # Check if an account already exists with username
-    db_password = fetchPassword(friend)
+    if friend in users:
+        return "success"
 
-    if db_password == None:
-        return "no account"
-
-    return "success"
-
-
-# Create a chat between two users: add each user's to the others' friends
-# and create a messages table
-@app.route("/createchat", methods=['POST'])
-def createchat():
-
-    username = session["username"]
-    data = flask.request.json
-    friend = data['friend']
-    friend = friend.lower()
-
-    # Add each user to the other's friendship table
-    addFriendship(username, friend)
-
-    # Create messsages table for storing chats
-    createMessagesTable(username, friend)
-
-    return "success"
-
+    return "no account"
 
 
 
