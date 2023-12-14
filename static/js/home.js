@@ -1,52 +1,65 @@
-// who are we talking to currently
+// Who are we currently chatting with?
 var chatter = ""
-var author = document.getElementById('username').innerHTML
-var u_session // can i do this
+
+// Who are we?
+var author = localStorage.getItem("username")
+
+// Olm global variables
+var u_session 
 var user
 
+// Initialize Olm
 document.addEventListener("DOMContentLoaded", function() {
 	Olm.init()
-  
   }, false);
-  
 
 
+// Pretty printing
 const log = (text, color) => {
 	document.getElementById('log').innerHTML += `<span style="color: ${color}">${text}</span><br>`;
   };
+  
+// Creating web socket with sever
+const socket = new WebSocket('ws://' + location.host + '/handle');
 
-const socket = new WebSocket('ws://' + location.host + '/echo');
-  socket.addEventListener('message', ev => {
-	// have to deal with different kinds of stuff coming back through sock
+// Handle receiving messages from server through socket
+socket.addEventListener('message', ev => {
 
 	let data = ev.data
 	let json_data = JSON.parse(data)
+
+	// Receiving normal message from server after olm handshake
 	if (json_data["type"]=="message"){
 		sender = json_data["from"]
 		message = json_data["message"]
 		decrypted = u_session.decrypt(message.type, message.body)
 		formatted_string = sender+": "+decrypted
+		
+		// Uncomment to display encrypted message
+		// log("Encrypted: "+JSON.stringify(message.body), "red")
+		
 		log(formatted_string, 'purple');
 	}
+
+	// Receiving information about some other user's public keys from server
 	else if (json_data["type"]=="key_send"){
-		//log(json_data["message"], 'purple');
+		
+		// Create an empty olm account to pickle and unpickle our account from local storage
 		user = new Olm.Account()
 		let id_keys = localStorage.getItem("id_keys");
-		// alert(id_key)
 		let user_str = localStorage.getItem("olm_acc")
-		user.unpickle(id_keys, user_str) //????
+		user.unpickle(id_keys, user_str)
 		id_keys = user.identity_keys()
 
-		// ok now i know who i am!!!! and i have keys !!!!
-		// create outbound session
+		// Create session for client and their desired receiver
 		u_session = new Olm.Session();
 		receiver_id_key = json_data["id_key"]
-		receiver_ot_key = json_data["ot_key"] // this one is fucked up
-		alert(receiver_id_key)
-		alert(receiver_ot_key)
+		receiver_ot_key = json_data["ot_key"]
+
+		// Create outbound with keys of desired receiver
 		u_session.create_outbound(user, receiver_id_key, receiver_ot_key);
-		message1 = u_session.encrypt("SHAWTY");
-		log("Created outbound session", 'green');
+		message1 = u_session.encrypt("You are now chatting with " + author + "!");
+		log("You are now chatting with " +  chatter + "!", 'black');
 		let data = {
 			"type": "invite",
 			"to": chatter,
@@ -55,7 +68,10 @@ const socket = new WebSocket('ws://' + location.host + '/echo');
 		}
 		socket.send(JSON.stringify(data));
 	}
+	// Receiving invite to chat from other user
 	else if (json_data["type"]=="invite"){
+		
+		// Unpickle account from local storage
 		user = new Olm.Account()
 		let id_keys = localStorage.getItem("id_keys");
 		let user_str = localStorage.getItem("olm_acc")
@@ -63,18 +79,21 @@ const socket = new WebSocket('ws://' + location.host + '/echo');
 		id_keys = user.identity_keys()
 		message1 = json_data["message"]
 
-		// ok now i know who i am!!!! and i have keys !!!!
-		// create outbound session
+		// Create inbound session
 		u_session = new Olm.Session();
-		alert("about to do inbound")
 		u_session.create_inbound(user, message1.body);
+		// Decrypt first message
 		plaintext = u_session.decrypt(message1.type, message1.body);
-		log(plaintext, 'purple');
+		chatter = json_data["sender"]
+
+		document.getElementById('chat_header').innerHTML = "Chat with "+chatter
+		
+		log(plaintext, 'black');
 	}
 
-	
 });
 
+// Send message to server through socket
 document.getElementById('form').onsubmit = ev => {
 	ev.preventDefault();
 	if (chatter == ""){
@@ -82,11 +101,9 @@ document.getElementById('form').onsubmit = ev => {
 		return
 	}
 	else{
-	
 		const textField = document.getElementById('text');
 		log('me: ' + textField.value, 'blue');
 
-		// should add additional info: send to, from, msg
 		let data = {
 			"type": "message",
 			"to": chatter,
@@ -98,8 +115,7 @@ document.getElementById('form').onsubmit = ev => {
 	}
 };
 
-
-
+// Invite user to chat through server
 function enterUser(){
 	let friend = document.getElementById("friend").value;
 	document.getElementById("friend").input = friend
@@ -107,20 +123,18 @@ function enterUser(){
 		"friend": friend,
 	};
 
-	// Verify desired user to chat with
+	// Verify desired user has an account
 	fetch("/checkfriend",
 		{method: 'POST',
 		headers: {'Content-Type': 'application/json'},
 		body: JSON.stringify(data)})
 	.then((response) => response.text())
 	.then((text) => {
-
-		// todo: add case for already have a chat with this person!
 	  if (text=="success") {
-			chatter = friend
-			alert("Yay!")
+			chatter = friend.toLowerCase()
 			document.getElementById('chat_header').innerHTML = "Chat with "+chatter
-			// want to chat w new friend
+			
+			// Ask server for desired receiver's public keys
 			intializeChat()
 	  }
 		else if (text=="no account"){
@@ -133,10 +147,9 @@ function enterUser(){
 	  }});
 
 }
+
+// Ask server for desired receiver's public keys
 function intializeChat(){
-	// step 1: ask for keys
-	// request to talk to someone (key_query)
 	let req = {"type":"key_query", "to": chatter, "from": author, "message":""}
-	// sends request to server for keys
 	socket.send(JSON.stringify(req))
 }

@@ -1,20 +1,21 @@
-// https://www.freecodecamp.org/news/how-to-submit-a-form-with-javascript/#:~:text=To%20get%20this%20form's%20data,JavaScript%20using%20their%20document%20methods.
 let loginForm = document.getElementById("loginForm");
 
+// Handle logins
 loginForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
   let username = document.getElementById("username");
 
+  // Empty username field
   if (username.value == "" ) {
     alert("Please provide a value for the field!");
   } else {
 
     let data = {
-      "username": username.value,
+      "username": username.value.toLowerCase(),
     };
 
-    // Check user credentials
+    // Check user credentials: does this username already exist?
     fetch("/auth",
       {method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -22,22 +23,14 @@ loginForm.addEventListener("submit", (e) => {
     .then((response) => response.text())
     .then((text) => {
     	if (text=="success") {
-        	alert("Successfully logged in!")
+          localStorage.setItem("username", data["username"])
         	location.href = "/home";
     	}
       else if (text=="no account"){
-        alert("Account not found")
+        alert("Account not found :(")
 		  }
 
-	});
-
-
-    username.value = "";
+	  });
   }
+  
 });
-// https://gitlab.matrix.org/matrix-org/olm/-/blob/master/javascript/demo/group_demo.js?ref_type=heads
-// example JS file that creates chat
-// steal
-
-// https://gitlab.matrix.org/matrix-org/olm/-/blob/master/javascript/demo/one_to_one_demo.html?ref_type=heads
-// one to one demo

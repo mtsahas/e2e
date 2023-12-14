@@ -7,11 +7,8 @@
 
 import os
 import flask
-import sqlite3
 from flask import session
 from flask_sock import Sock
-import asyncio
-import websockets
 import json
 
 # ------------------------ App setup --------------------------------
@@ -19,98 +16,64 @@ app = flask.Flask(__name__, template_folder='static/templates')
 sock = Sock(app)
 app.secret_key = os.environ['APP_SECRET_KEY']
 
-# Initialize login_info table
-conn = sqlite3.connect("database.db")
-cursor = conn.cursor()
-result = cursor.execute("CREATE TABLE IF NOT EXISTS login_info(username TEXT, password TEXT)")
-conn.close()
-# -------------------------------------------------------------------
-
+# list of all users in our app
 users = []
-all_clients = []
-buddies = []
+
+# Store socket : client mappings
 sock_map = {}
+
+# Store public keys : client mappings
 idkey_map = {}
 otkey_map = {}
 
-'''
-async def send_message(message):
-    for client in all_clients:
-        await client.send(message)
-
-async def new_client_connected(client_socket, path):
-    print("new client connected!")
-
-    # add new socket to list of client sockts
-    all_clients.append(client_socket)
-    print(all_clients)
-
-    while True:
-       new_message = await client_socket.recv()
-       print("Client sent:", new_message)
-       await send_message(new_message)
-
-async def start_server():
-    print('server started!')
-    await websockets.serve(new_client_connected, "localhost", 5003)
-'''
+# -------------------------------------------------------------------
 
 
-
-# echo
-@sock.route('/echo')
+# Handle incoming messages, send outgoing messages based on message type
+@sock.route('/handle')
 def echo(sock):
+    
+    # Current socket is the sender's socket
     sock_map[session["username"]] = sock
     
-    print("Just gave", session["username"], "socket", sock)
-    print("Echo sock:", sock)
     while True:
         data = sock.receive()
-        print(data)
-        # convert string into python dict
+        # Convert string into python dict
         json_data = json.loads(data)
 
-        # normal messaging after olm handshake
-
+        # Normal messaging after olm handshake
         if json_data["type"] == "message":
-            receiver = json_data["to"]
-            receiver = receiver.lower()
-            sender = json_data["from"]
+            receiver = json_data["to"].lower()
+            sender = json_data["from"].lower()
             receiver_sock = sock_map[receiver]
-
+            
+            # Send message to desired receiver through their socket
             formatted_send = {"type":"message", "to": receiver, "from":sender, "message":json_data["msg"]}
             receiver_sock.send(json.dumps(formatted_send))
+        
+        # Sender asking for receiver's public keys
         elif json_data["type"] == "key_query":
-            # whose key info do we need?
+            # Whose key info do we need?
             receiver = json_data["to"].lower()
-            # taking and removing last element of one time keys
+            
+            # Take and then remove last element of one time keys
             ot_key = otkey_map[receiver].pop()
             id_key = idkey_map[receiver]
+            
+            # Sending back key information to same socket
             formatted_send = {"type":"key_send", "id_key":id_key, "ot_key":ot_key}
-            sock.send(json.dumps(formatted_send)) ## sending back to same socket
+            sock.send(json.dumps(formatted_send)) 
 
+        # Sender invites receiver to chat with them
         elif json_data["type"] == "invite":
             receiver = json_data["to"].lower()
-            sender = json_data["from"]
+            sender = json_data["from"].lower()
             receiver_sock = sock_map[receiver]
             message = json_data["message"]
 
-            formatted_send = {"type":"invite", "message":message}
+            # Send invite to desired receiver through their socket
+            formatted_send = {"type":"invite", "sender":sender,"message":message}
             receiver_sock.send(json.dumps(formatted_send))
-        
-        ## what sock receives:
-        # 1. regular message (message)
-        # 2. request to talk to someone (key_query)
-        # 3. first time message (invite)
-
-        ## what we send through socks:
-        # 1. public keys + ot key (key_send)
-        # 2. invite (first message --> to create inbound on js) (first_message)
-        # 3. regular messaging (message)
-
-        print(sock_map)
-        print("Echo sock:", sock)
-       
 
 
 # Display login page
@@ -139,7 +102,7 @@ def newaccount():
     return response
 
 
-# Verify a given username / password pair
+# Verify a given username exists
 @app.route('/auth', methods=['POST'])
 def auth():
     data = flask.request.json
@@ -154,7 +117,7 @@ def auth():
     return "no account"
 
 
-# Add a user's credentials to the db if the username isn't taken
+# Add a user's credentials to users list if the username isn't taken
 @app.route('/addcredentials', methods=['POST'])
 def addcredentials():
     data = flask.request.json
@@ -172,21 +135,18 @@ def addcredentials():
 
     return "success"
 
+
+# Store Olm keys of current user when they create an account
 @app.route('/receivekeys', methods=['POST'])
 def receivekeys():
     data = flask.request.json
     username = session["username"]
     id_key = data['id_key']
     one_time_keys = data["one_time_keys"]
-    try:
-        idkey_map[username] = id_key
-        otkey_map[username] = one_time_keys ## list of keys
-        print("ID key map:", idkey_map)
-        print("OT key map:", otkey_map)
-    except:
-        return "error"
-
-
+    
+    idkey_map[username] = id_key
+    otkey_map[username] = one_time_keys
+    
     return "success"
 
 
@@ -198,6 +158,7 @@ def checkfriend():
     friend = data['friend']
     friend = friend.lower()
 
+    # Don't allow users to chat with themselves
     if friend == username:
         return "self chat"
 
@@ -206,7 +167,6 @@ def checkfriend():
         return "success"
 
     return "no account"
-
 
 
 if __name__ == '__main__':
