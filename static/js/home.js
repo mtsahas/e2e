@@ -90,6 +90,9 @@ socket.addEventListener('message', ev => {
 		
 		log(plaintext, 'black');
 	}
+	else if (json_data["type"]=="error"){
+		alert("Something went wrong. Try reloading or contacting the server administrator.")
+	}
 
 });
 
@@ -133,7 +136,7 @@ function enterUser(){
 	  if (text=="success") {
 			chatter = friend.toLowerCase()
 			document.getElementById('chat_header').innerHTML = "Chat with "+chatter
-			
+
 			// Ask server for desired receiver's public keys
 			intializeChat()
 	  }

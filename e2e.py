@@ -33,47 +33,59 @@ otkey_map = {}
 @sock.route('/handle')
 def handle(sock):
 
-    # Current socket is the sender's socket
-    sock_map[session["username"]] = sock
+    try:
+        # Saves username:socket mapping
+        sock_map[session["username"]] = sock
+        
+    except:
+        print("Error with receiving socket in server")
 
-    while True:
-        data = sock.receive()
-        # Convert string into python dict
-        json_data = json.loads(data)
+    try:
+        while True:
+            data = sock.receive()
+            # Convert string into python dict
+            json_data = json.loads(data)
 
-        # Normal messaging after olm handshake
-        if json_data["type"] == "message":
-            receiver = json_data["to"].lower()
-            sender = json_data["from"].lower()
-            receiver_sock = sock_map[receiver]
+            # Normal messaging after olm handshake
+            if json_data["type"] == "message":
+                receiver = json_data["to"].lower()
+                sender = json_data["from"].lower()
+                receiver_sock = sock_map[receiver]
 
-            # Send message to desired receiver through their socket
-            formatted_send = {"type":"message", "to": receiver, "from":sender, "message":json_data["msg"]}
-            receiver_sock.send(json.dumps(formatted_send))
+                # Send message to desired receiver through their socket
+                formatted_send = {"type":"message", "to": receiver, "from":sender, "message":json_data["msg"]}
+                receiver_sock.send(json.dumps(formatted_send))
 
-        # Sender asking for receiver's public keys
-        elif json_data["type"] == "key_query":
-            # Whose key info do we need?
-            receiver = json_data["to"].lower()
+            # Sender asking for receiver's public keys
+            elif json_data["type"] == "key_query":
+                # Whose key info do we need?
+                receiver = json_data["to"].lower()
 
-            # Take and then remove last element of one time keys
-            ot_key = otkey_map[receiver].pop()
-            id_key = idkey_map[receiver]
+                # Take and then remove last element of one time keys
+                try:
+                    ot_key = otkey_map[receiver].pop()
+                    id_key = idkey_map[receiver]
 
-            # Sending back key information to same socket
-            formatted_send = {"type":"key_send", "id_key":id_key, "ot_key":ot_key}
-            sock.send(json.dumps(formatted_send))
+                    # Sending back key information to same socket
+                    formatted_send = {"type":"key_send", "id_key":id_key, "ot_key":ot_key}
+                    sock.send(json.dumps(formatted_send))
+                    
+                except:
+                    sock.send(json.dumps({"type": "error"}))
 
-        # Sender invites receiver to chat with them
-        elif json_data["type"] == "invite":
-            receiver = json_data["to"].lower()
-            sender = json_data["from"].lower()
-            receiver_sock = sock_map[receiver]
-            message = json_data["message"]
 
-            # Send invite to desired receiver through their socket
-            formatted_send = {"type":"invite", "sender":sender,"message":message}
-            receiver_sock.send(json.dumps(formatted_send))
+            # Sender invites receiver to chat with them
+            elif json_data["type"] == "invite":
+                receiver = json_data["to"].lower()
+                sender = json_data["from"].lower()
+                receiver_sock = sock_map[receiver]
+                message = json_data["message"]
+
+                # Send invite to desired receiver through their socket
+                formatted_send = {"type":"invite", "sender":sender,"message":message}
+                receiver_sock.send(json.dumps(formatted_send))
+    except:
+        sock.send(json.dumps({"type": "error"}))
 
 
 # Display login page
@@ -88,9 +100,21 @@ def login():
 # Display home page
 @app.route('/home', methods=['GET'])
 def home():
-    username = session["username"]
-    html_code = flask.render_template('home.html', username=username)
-    response = flask.make_response(html_code)
+    
+    # Check if user is not logged in, if so, direct them to login page
+    try:
+        username = session["username"]
+        if username not in users:
+            html_code = flask.render_template('notloggedin.html')
+        else:
+            html_code = flask.render_template('home.html', username=username)
+        
+        response = flask.make_response(html_code)
+        
+    except:
+        html_code = flask.render_template('notloggedin.html')
+        response = flask.make_response(html_code)
+        
     return response
 
 
@@ -105,6 +129,7 @@ def newaccount():
 # Verify a given username exists
 @app.route('/auth', methods=['POST'])
 def auth():
+    
     data = flask.request.json
     username = data['username']
     username = username.lower()
@@ -126,15 +151,15 @@ def addcredentials():
         username = username.lower()
 
 		# Check if an account already exists with username
-  if (username in users):
-			return("already exists")
+        if (username in users):
+            return("already exists")
 
 		# add credentials to users list
-		users.append(username)
+        users.append(username)
 
-		session["username"] = username
+        session["username"] = username
 
-		return "success"
+        return "success"
 
     except:
         return "error"
