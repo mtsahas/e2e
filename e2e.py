@@ -120,34 +120,41 @@ def auth():
 # Add a user's credentials to users list if the username isn't taken
 @app.route('/addcredentials', methods=['POST'])
 def addcredentials():
-    data = flask.request.json
-    username = data['username']
-    username = username.lower()
+    try:
+        data = flask.request.json
+        username = data['username']
+        username = username.lower()
 
-    # Check if an account already exists with username
-    if (username in users):
-        return("already exists")
+		# Check if an account already exists with username
+  if (username in users):
+			return("already exists")
 
-    # add credentials to users list
-    users.append(username)
+		# add credentials to users list
+		users.append(username)
 
-    session["username"] = username
+		session["username"] = username
 
-    return "success"
+		return "success"
 
+    except:
+        return "error"
 
 # Store Olm keys of current user when they create an account
 @app.route('/receivekeys', methods=['POST'])
 def receivekeys():
-    data = flask.request.json
-    username = session["username"]
-    id_key = data['id_key']
-    one_time_keys = data["one_time_keys"]
 
-    idkey_map[username] = id_key
-    otkey_map[username] = one_time_keys
+    try:
+        data = flask.request.json
+        username = session["username"]
+        id_key = data['id_key']
+        one_time_keys = data["one_time_keys"]
 
-    return "success"
+        idkey_map[username] = id_key
+        otkey_map[username] = one_time_keys
+        return "success"
+
+    except:
+        return "error"
 
 
 # Check if a chat is possible with some user
@@ -168,6 +175,12 @@ def checkfriend():
 
     return "no account"
 
+
+@app.errorhandler(404)
+def notfound(e):
+    html_code = flask.render_template('404.html')
+    response = flask.make_response(html_code)
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5002)

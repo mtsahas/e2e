@@ -56,7 +56,7 @@ function createOlmAcc(){
     }
 
     let data = {"id_key":id_key_public, "one_time_keys":user_ot_keys}
-    
+
     // Sending public keys to be stored on server
     fetch("/receivekeys",
       {method: 'POST',
@@ -75,7 +75,7 @@ function createOlmAcc(){
       }
 
       else {
-          alert("Error sending")
+          alert("Error sending keys to server :( Please try again")
     }});
 
 }
