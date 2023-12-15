@@ -31,11 +31,11 @@ otkey_map = {}
 
 # Handle incoming messages, send outgoing messages based on message type
 @sock.route('/handle')
-def echo(sock):
-    
+def handle(sock):
+
     # Current socket is the sender's socket
     sock_map[session["username"]] = sock
-    
+
     while True:
         data = sock.receive()
         # Convert string into python dict
@@ -46,23 +46,23 @@ def echo(sock):
             receiver = json_data["to"].lower()
             sender = json_data["from"].lower()
             receiver_sock = sock_map[receiver]
-            
+
             # Send message to desired receiver through their socket
             formatted_send = {"type":"message", "to": receiver, "from":sender, "message":json_data["msg"]}
             receiver_sock.send(json.dumps(formatted_send))
-        
+
         # Sender asking for receiver's public keys
         elif json_data["type"] == "key_query":
             # Whose key info do we need?
             receiver = json_data["to"].lower()
-            
+
             # Take and then remove last element of one time keys
             ot_key = otkey_map[receiver].pop()
             id_key = idkey_map[receiver]
-            
+
             # Sending back key information to same socket
             formatted_send = {"type":"key_send", "id_key":id_key, "ot_key":ot_key}
-            sock.send(json.dumps(formatted_send)) 
+            sock.send(json.dumps(formatted_send))
 
         # Sender invites receiver to chat with them
         elif json_data["type"] == "invite":
@@ -143,10 +143,10 @@ def receivekeys():
     username = session["username"]
     id_key = data['id_key']
     one_time_keys = data["one_time_keys"]
-    
+
     idkey_map[username] = id_key
     otkey_map[username] = one_time_keys
-    
+
     return "success"
 
 
