@@ -8,7 +8,7 @@ e2e is an end-to-end encrypted messaging app developed as a final project for CO
 1. Clone the github repository.
 2. Ensure that all packages in requirements.txt are installed in your python environment.
 3. Set an app key by setting an environemtal variable in terminal:
-`export APP_SECRET_KEY = [some key]`
+`export APP_SECRET_KEY=[some key]`
 4. Start the server by running:
 `python3 e2e.py`
 
