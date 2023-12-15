@@ -51,10 +51,15 @@ def handle(sock):
                 receiver = json_data["to"].lower()
                 sender = json_data["from"].lower()
                 receiver_sock = sock_map[receiver]
+                
+                if receiver_sock == "offline":
+                    formatted_send = {"type":"offline"}
+                    sock.send(json.dumps(formatted_send))
 
                 # Send message to desired receiver through their socket
-                formatted_send = {"type":"message", "to": receiver, "from":sender, "message":json_data["msg"]}
-                receiver_sock.send(json.dumps(formatted_send))
+                else:
+                    formatted_send = {"type":"message", "to": receiver, "from":sender, "message":json_data["msg"]}
+                    receiver_sock.send(json.dumps(formatted_send))
 
             # Sender asking for receiver's public keys
             elif json_data["type"] == "key_query":
@@ -68,8 +73,14 @@ def handle(sock):
 
                     # Sending back key information to same socket
                     formatted_send = {"type":"key_send", "id_key":id_key, "ot_key":ot_key}
-                    sock.send(json.dumps(formatted_send))
-                    
+
+                    receiver_sock = sock_map[receiver]
+                    if receiver_sock == "offline":
+                        offline = {"type":"offline"}
+                        sock.send(json.dumps(offline))
+                    else:
+                        sock.send(json.dumps(formatted_send))
+                        
                 except:
                     sock.send(json.dumps({"type": "error"}))
 
@@ -96,6 +107,13 @@ def login():
     response = flask.make_response(html_code)
     return response
 
+@app.route('/logout', methods=['GET'])
+def logout():
+    sock_map[session["username"]]="offline"
+    session["username"]=""
+    html_code = flask.render_template('login.html')
+    response = flask.make_response(html_code)
+    return response
 
 # Display home page
 @app.route('/home', methods=['GET'])

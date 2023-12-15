@@ -42,6 +42,7 @@ socket.addEventListener('message', ev => {
 
 	let data = ev.data
 	let json_data = JSON.parse(data)
+	console.log(json_data)
 
 	// Receiving normal message from server after olm handshake
 	if (json_data["type"]=="message"){
@@ -55,7 +56,6 @@ socket.addEventListener('message', ev => {
 		
 		log(formatted_string, 'purple');
 	}
-
 	// Receiving information about some other user's public keys from server
 	else if (json_data["type"]=="key_send"){
 		
@@ -107,6 +107,12 @@ socket.addEventListener('message', ev => {
 	}
 	else if (json_data["type"]=="error"){
 		alert("Something went wrong. Try reloading or contacting the server administrator.")
+	}
+	else if (json_data["type"]=="offline"){
+		alert("The user you would like to chat with is offline. They cannot receive messages at this time.")
+		log(chatter+" has left the chat.", 'black');
+		chatter = ""
+		document.getElementById('friend').value = ""
 	}
 
 });
