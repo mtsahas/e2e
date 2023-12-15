@@ -14,8 +14,23 @@ document.addEventListener("DOMContentLoaded", function() {
   }, false);
 
 
+// Input sanitization
+function sanitize(string) {
+	const map = {
+		'&': '&amp;',
+		'<': '&lt;',
+		'>': '&gt;',
+		'"': '&quot;',
+		"'": '&#x27;',
+		"/": '&#x2F;',
+	};
+	const reg = /[&<>"'/]/ig;
+	return string.replace(reg, (match)=>(map[match]));
+}
+  
 // Pretty printing
 const log = (text, color) => {
+	text = sanitize(text)
 	document.getElementById('log').innerHTML += `<span style="color: ${color}">${text}</span><br>`;
   };
   
@@ -86,7 +101,7 @@ socket.addEventListener('message', ev => {
 		plaintext = u_session.decrypt(message1.type, message1.body);
 		chatter = json_data["sender"]
 
-		document.getElementById('chat_header').innerHTML = "Chat with "+chatter
+		document.getElementById('chat_header').textContent = "Chat with "+ chatter
 		
 		log(plaintext, 'black');
 	}
@@ -135,7 +150,7 @@ function enterUser(){
 	.then((text) => {
 	  if (text=="success") {
 			chatter = friend.toLowerCase()
-			document.getElementById('chat_header').innerHTML = "Chat with "+chatter
+			document.getElementById('chat_header').textContent = "Chat with "+chatter
 
 			// Ask server for desired receiver's public keys
 			intializeChat()
